@@ -26,7 +26,9 @@ def register_page(request):
 
 
 
-
+def login_page(request):
+    
+    return render(request, "master/base-form.html")
 
 
 
