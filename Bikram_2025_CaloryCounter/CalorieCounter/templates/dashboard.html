@@ -1,0 +1,10 @@
+{% extends 'master/base.html' %} 
+
+{% block body %}
+<div class="container">
+    {% include 'master/message.html' %}
+    <h1>
+        Welcome, {{ request.user.username}}
+    </h1>
+</div>
+{% endblock body %}

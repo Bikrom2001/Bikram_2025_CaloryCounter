@@ -30,7 +30,7 @@ def register_page(request):
 def login_page(request):
     
     if request.method == "POST":
-       form_data = LoginForm(request.POST) 
+       form_data = LoginForm(request, request.POST) 
        if form_data.is_valid():
            user = form_data.get_user()
            login(request, user)
@@ -48,3 +48,6 @@ def login_page(request):
 
 
 
+def dashboard_page(request):
+    
+    return render(request, 'dashboard.html')
