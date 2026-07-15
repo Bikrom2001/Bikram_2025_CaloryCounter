@@ -5,7 +5,16 @@ from CalorieCounter.forms import *
 
 def register_page(request):
     
-    return render(request, "master/base-form.html")
+    
+    form_data = RegisterationForm()
+    
+    context ={
+        "form_data": form_data,
+        "form_title": "User Register Form",
+        "form_btn": "Register"
+    }
+    
+    return render(request, "master/base-form.html", context)
 
 
 
