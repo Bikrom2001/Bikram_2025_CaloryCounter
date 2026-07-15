@@ -5,6 +5,7 @@ from CalorieCounter.forms import *
 
 def register_page(request):
     
+    return render(request, "master/base-form.html")
 
 
 
