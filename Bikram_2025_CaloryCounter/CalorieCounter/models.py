@@ -30,4 +30,14 @@ class BasicInfoModel(models.Model):
         return f"{self.name} - {self.age}"
     
     
+# consumed calories (Item name, Calorie consumed)
 
+class ConsumedCalories(models.Model):
+    
+    item_name = models.CharField(max_length=200, null=True)
+    calorie = models.FloatField(null=True)
+    created_at = models.DateField(auto_now_add=True, null=True)
+    consumed_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True, related_name='user_calorie')
+    
+    def __str__(self):
+        return f'{self.item_name} - {self.consumed_by.username}'
