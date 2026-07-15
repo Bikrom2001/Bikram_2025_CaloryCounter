@@ -1,3 +1,14 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from CalorieCounter.models import *
+from CalorieCounter.forms import *
 
-# Create your views here.
+
+def register_page(request):
+    
+
+
+
+
+
+
+
