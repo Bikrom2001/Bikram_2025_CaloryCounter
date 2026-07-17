@@ -29,5 +29,37 @@
     </div>
     
   </div>
+
+
+
+
+  <h2 class="mt-4">Today Consumed Calories</h2>
+
+  <table class="table table-striped"> 
+    <thead>
+    <tr>
+      <th scope="col">#SL</th>
+      <th scope="col">Item Name</th>
+      <th scope="col">Consumed Calorie</th>
+      <th scope="col">Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for data in today_consumed_date %}
+        <tr>
+            <td>{{forloop.counter}}</td>
+            <td>{{data.item_name}}</td>
+            <td>{{data.calorie}}</td>
+            <td>
+                <a href="{% url 'Update_calorie' data.id %}">Edit</a>
+                <a href="{% url 'delate_calorie' data.id %}">Delete</a>
+            </td>
+        </tr>
+    {% endfor %}
+  </tbody>
+    </table>
+
+
+
 </div>
 {% endblock body %}

@@ -65,16 +65,20 @@ def dashboard_page(request):
     except:
         bmr = 0
     today = date.today()
-    total_consumed_date = ConsumedCalories.objects.filter(
+    today_consumed_date = ConsumedCalories.objects.filter(
         consumed_by = current_user,
         created_at = today
-    ).aggregate(total = Sum('calorie'))
+    )
+    total_consumed_calories = today_consumed_date.aggregate(
+        total = Sum('calorie')
+    )
     
     
     
     context ={
         'required_calories': bmr,
-        'consumed_calories': total_consumed_date['total']
+        'today_consumed_date':today_consumed_date,
+        'consumed_calories': total_consumed_calories['total']
         
     }
     
