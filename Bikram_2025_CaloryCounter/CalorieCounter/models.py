@@ -24,6 +24,7 @@ class BasicInfoModel(models.Model):
     gender = models.CharField(choices=GENDER_TYPE, max_length=10, null=True)
     height = models.FloatField(null=True)
     weight = models.FloatField(null=True)
+    bmr = models.FloatField(null=True)
     
     
     def __str__(self):
