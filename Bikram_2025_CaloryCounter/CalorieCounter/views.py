@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from CalorieCounter.models import *
 from CalorieCounter.forms import *
@@ -47,6 +48,12 @@ def login_page(request):
     return render(request, "master/base-form.html", context)
 
 
+@login_required
+def logout_page(request):
+    logout(request)
+    messages.success(request, 'Logout successfully')
+    return redirect('login_page')
+@login_required
 
 def dashboard_page(request):
     
