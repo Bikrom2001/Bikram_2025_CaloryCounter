@@ -78,9 +78,9 @@ def dashboard_page(request):
     less_more = bmr - total_caloire
     
     if bmr > total_caloire:
-        suggestion = "doya kore besi kore khao, na hole cikna hoiya jaba"
+        suggestion = "Your calorie intake is below your daily requirement."
     else:
-        suggestion = "kom kha beta, na hole full jaba"
+        suggestion = "Your calorie intake has exceeded your daily requirement."
     
     
     
