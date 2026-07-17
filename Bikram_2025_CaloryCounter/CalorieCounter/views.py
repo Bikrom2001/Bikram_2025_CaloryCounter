@@ -103,3 +103,8 @@ def update_profile(request):
     }
     
     return render(request, 'master/base-form.html', context)
+
+
+def consumed_calories_list(request):
+    
+    return render(request, 'calorie-list.html')

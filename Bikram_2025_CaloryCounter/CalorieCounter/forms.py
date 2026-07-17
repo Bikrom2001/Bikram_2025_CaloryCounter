@@ -19,3 +19,12 @@ class ProfileUpdateForm(forms.ModelForm):
         model = BasicInfoModel
         fields = '__all__'
         exclude = ['user', 'bmr']
+        
+        
+
+class ConsumedCalorieForm(forms.ModelForm):
+    
+    class Meta:
+        model = ConsumedCalories
+        fields = '__all__'
+        exclude = ['consumed_by']

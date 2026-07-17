@@ -9,4 +9,5 @@ urlpatterns = [
     path('dashboard/', dashboard_page, name='dashboard_page'),
     path('profile/', profile_page, name='profile_page'),
     path('update-profile/', update_profile, name='update_profile'),
+    path('consumed-calorie-list/', consumed_calories_list, name='consumed_calories_list'),
 ]

@@ -1,0 +1,24 @@
+{% extends 'master/base.html' %}
+
+
+{% block body %}
+
+<div class="container">
+    {% include 'master/message.html' %}
+    <h1>calorie List</h1>
+    <a href="{% url 'update_profile' %}" class="btn btn-primary">Add Calorie</a>
+
+    <table class="table table-striped"> 
+    <thead>
+    <tr>
+      <th scope="col">#SL</th>
+      <th scope="col">Item Name</th>
+      <th scope="col">Consumed Calorie</th>
+      <th scope="col">Action</th>
+    </tr>
+  </thead>
+    </table>
+
+</div>
+    
+{% endblock body %}
