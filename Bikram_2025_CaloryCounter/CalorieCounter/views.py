@@ -74,13 +74,23 @@ def dashboard_page(request):
         total_count = Count('calorie')
     )
     
+    total_caloire = total_consumed_calories['total']
+    less_more = bmr - total_caloire
+    
+    if bmr > total_caloire:
+        suggestion = "doya kore besi kore khao, na hole cikna hoiya jaba"
+    else:
+        suggestion = "kom kha beta, na hole full jaba"
+    
     
     
     context ={
         'required_calories': bmr,
         'today_consumed_date':today_consumed_date,
-        'consumed_calories': total_consumed_calories['total'],
-        'total_count': total_consumed_calories['total_count']
+        'consumed_calories': total_caloire,
+        'total_count': total_consumed_calories['total_count'],
+        'less_more':less_more,
+        'suggestion': suggestion,
         
     }
     
