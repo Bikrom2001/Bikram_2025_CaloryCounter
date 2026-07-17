@@ -58,3 +58,8 @@ def logout_page(request):
 def dashboard_page(request):
     
     return render(request, 'dashboard.html')
+
+@login_required
+def profile_page(request):
+    
+    return render(request, 'profile.html')
