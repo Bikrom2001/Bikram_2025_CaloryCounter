@@ -5,6 +5,10 @@
 
 <div class="container">
     <h1>Profile Info</h1>
+    <h2>Name: {{request.user.user_info.name}}</h2>
+
+    <a href="{% url 'update_profile' %}" class="btn btn-primary">Profile updated</a>
+
 </div>
     
 {% endblock body %}

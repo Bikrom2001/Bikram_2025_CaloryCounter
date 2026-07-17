@@ -63,3 +63,9 @@ def dashboard_page(request):
 def profile_page(request):
     
     return render(request, 'profile.html')
+
+
+@login_required
+def update_profile(request):
+    
+    return render(request, 'master/base-form.html')
