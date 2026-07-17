@@ -108,3 +108,29 @@ def update_profile(request):
 def consumed_calories_list(request):
     
     return render(request, 'calorie-list.html')
+
+
+def add_calorie(request):
+    
+    if request.method == "POST":
+        form_data = ConsumedCalorieForm(request.POST)
+        if form_data.is_valid():
+            data = form_data.save(commit=False)
+            data.consumed_by = request.user
+            data.save()
+            messages.success(request, 'successfully')
+            return redirect('consumed_calories_list')
+            
+    
+    
+    form_data = ConsumedCalorieForm()
+    
+    context = {
+        'form_data': form_data,
+        'form_title': "Add Calorie Info",
+        'form_btn': "Add Calorie",
+    }
+    
+    
+    return render(request, 'master/base-form.html', context)
+    
