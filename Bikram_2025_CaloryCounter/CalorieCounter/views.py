@@ -68,7 +68,34 @@ def profile_page(request):
 @login_required
 def update_profile(request):
     
-    form_data = ProfileUpdateForm()
+    try:
+        current_user = request.user.user_info
+        
+    except:
+        current_user = None
+    
+    
+    
+    if request.method == 'POST':
+        form_data = ProfileUpdateForm(request.POST, instance=current_user)
+        if form_data.is_valid():
+            data = form_data.save(commit=False)
+            data.user = request.user
+            weight = data.weight
+            height = data.height
+            age = data.age
+            if data.gender == 'Male':
+                #BMR= 66.47+(13.75 x weight in kg) + (5.003 x height in cm) - (6.755 x age in years)
+                bmr_calculate = 66.47 + (13.75 * weight) + (5.003 * height) - (6.755 * age)
+            else:
+                #BMR=655.1+(9.563 x weight in kg)+(1.850 xheight in cm) - (4.676 x age in years)
+                bmr_calculate = 655.1 + (9.563 * weight) + (1.850 * height) - (4.676 * age)
+            data.bmr = bmr_calculate
+            data.save()
+            messages.success(request, 'Profile Update successfully')
+            return redirect('profile_page')
+    
+    form_data = ProfileUpdateForm(instance=current_user)
     context = {
         'form_data': form_data,
         'form_title': "Update Profile Info",
