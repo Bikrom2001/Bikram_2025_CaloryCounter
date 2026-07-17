@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from datetime import date
-from django.db.models import Sum
+from django.db.models import Sum,Count
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -70,7 +70,8 @@ def dashboard_page(request):
         created_at = today
     )
     total_consumed_calories = today_consumed_date.aggregate(
-        total = Sum('calorie')
+        total = Sum('calorie'),
+        total_count = Count('calorie')
     )
     
     
@@ -78,7 +79,8 @@ def dashboard_page(request):
     context ={
         'required_calories': bmr,
         'today_consumed_date':today_consumed_date,
-        'consumed_calories': total_consumed_calories['total']
+        'consumed_calories': total_consumed_calories['total'],
+        'total_count': total_consumed_calories['total_count']
         
     }
     
