@@ -23,7 +23,10 @@
             <td>{{forloop.counter}}</td>
             <td>{{data.item_name}}</td>
             <td>{{data.calorie}}</td>
-            <td><a href="">Edit</a></td>
+            <td>
+                <a href="{% url 'Update_calorie' data.id %}">Edit</a>
+                <a href="{% url 'delate_calorie' data.id %}">Delete</a>
+            </td>
         </tr>
     {% endfor %}
   </tbody>

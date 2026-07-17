@@ -140,3 +140,50 @@ def add_calorie(request):
     
     return render(request, 'master/base-form.html', context)
     
+    
+
+
+def Update_calorie(request, id):
+    
+    try:
+        data = ConsumedCalories.objects.get(id = id)
+    
+    except:
+        data = None
+    
+    if request.method == "POST":
+        form_data = ConsumedCalorieForm(request.POST,  instance=data)
+        if form_data.is_valid():
+            data = form_data.save(commit=False)
+            data.consumed_by = request.user
+            data.save()
+            messages.success(request, 'successfully')
+            return redirect('consumed_calories_list')
+            
+    
+    
+    form_data = ConsumedCalorieForm(instance=data)
+    
+    context = {
+        'form_data': form_data,
+        'form_title': "Update Calorie Info",
+        'form_btn': "Update Calorie",
+    }
+    
+    
+    return render(request, 'master/base-form.html', context)
+    
+    
+
+def delate_calorie(request, id):
+    
+    try:
+        data = ConsumedCalories.objects.get(id = id)
+    
+    except:
+        data = None
+        
+    data.delete()
+    messages.success(request, 'successfully')
+    return redirect('consumed_calories_list')
+    

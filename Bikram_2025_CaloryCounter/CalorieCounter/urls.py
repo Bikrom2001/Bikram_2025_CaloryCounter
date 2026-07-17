@@ -11,4 +11,6 @@ urlpatterns = [
     path('update-profile/', update_profile, name='update_profile'),
     path('consumed-calorie-list/', consumed_calories_list, name='consumed_calories_list'),
     path('add-calorie/', add_calorie, name='add_calorie'),
+    path('update-calorie/<int:id>/', Update_calorie, name='Update_calorie'),
+    path('delete-calorie/<int:id>/', delate_calorie, name='delate_calorie'),
 ]
