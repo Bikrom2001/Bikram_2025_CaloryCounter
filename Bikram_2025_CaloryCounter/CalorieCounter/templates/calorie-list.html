@@ -17,6 +17,16 @@
       <th scope="col">Action</th>
     </tr>
   </thead>
+  <tbody>
+    {% for data in consumed_data %}
+        <tr>
+            <td>{{forloop.counter}}</td>
+            <td>{{data.item_name}}</td>
+            <td>{{data.calorie}}</td>
+            <td><a href="">Edit</a></td>
+        </tr>
+    {% endfor %}
+  </tbody>
     </table>
 
 </div>

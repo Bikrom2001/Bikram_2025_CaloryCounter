@@ -107,7 +107,13 @@ def update_profile(request):
 
 def consumed_calories_list(request):
     
-    return render(request, 'calorie-list.html')
+    consumed_data = ConsumedCalories.objects.filter(consumed_by = request.user)
+    
+    context ={
+        "consumed_data": consumed_data,
+    }
+    
+    return render(request, 'calorie-list.html', context)
 
 
 def add_calorie(request):
