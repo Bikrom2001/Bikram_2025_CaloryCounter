@@ -57,7 +57,17 @@ def logout_page(request):
 
 def dashboard_page(request):
     
-    return render(request, 'dashboard.html')
+    try:
+        bmr = round(request.user.user_info.bmr, 2)
+    except:
+        bmr = 0
+    
+    context ={
+        'required_calories': bmr,
+        
+    }
+    
+    return render(request, 'dashboard.html', context)
 
 @login_required
 def profile_page(request):

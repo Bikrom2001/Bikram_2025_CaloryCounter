@@ -1,10 +1,33 @@
-{% extends 'master/base.html' %} 
-
-{% block body %}
+{% extends 'master/base.html' %} {% block body %}
 <div class="container">
-    {% include 'master/message.html' %}
-    <h1>
-        Welcome, {{ request.user.username}}
-    </h1>
+  {% include 'master/message.html' %}
+  <h1>Welcome, {{ request.user.username}}</h1>
+  <div class="row">
+    <div class="col-lg-4 col-md-6 col-sm-12">
+      <div class="card">
+        <div class="card-header">Consumed Calories</div>
+        <div class="card-body">
+          <h5 class="card-title">0 Kcal</h5>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4 col-md-6 col-sm-12">
+      <div class="card">
+        <div class="card-header">Required Calories</div>
+        <div class="card-body">
+          <h5 class="card-title">{{required_calories}} Kcal</h5>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4 col-md-6 col-sm-12">
+      <div class="card">
+        <div class="card-header">Less/More Calories</div>
+        <div class="card-body">
+          <h5 class="card-title">0 Kcal</h5>
+        </div>
+      </div>
+    </div>
+    
+  </div>
 </div>
 {% endblock body %}
