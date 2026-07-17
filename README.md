@@ -545,3 +545,497 @@ Bikram_2025_CaloryCounter/
 
 ---
 [⬆️ Go to Context](#context)
+
+
+# Context - Part 02
+
+> This is **Part 02** of the Calorie Counter project documentation. [Part 01](./README.md) covered project setup, models, authentication (register/login), and the basic dashboard. This part covers everything added in the **commits made on July 17, 2026** — logout, BMR calculation, profile management, and the full calorie tracking + suggestion system.
+
+- [Context - Part 02](#context---part-02)
+  - [Add `bmr` Field To BasicInfoModel](#add-bmr-field-to-basicinfomodel)
+  - [Logout Functionality](#logout-functionality)
+  - [Conditional Navbar With `is_authenticated`](#conditional-navbar-with-is_authenticated)
+  - [Profile Info Page](#profile-info-page)
+  - [Update Profile Form](#update-profile-form)
+  - [Update Profile View — BMR Calculation Logic](#update-profile-view--bmr-calculation-logic)
+  - [Profile Update Template](#profile-update-template)
+  - [Consumed Calorie Form](#consumed-calorie-form)
+  - [Add Calorie View](#add-calorie-view)
+  - [Consumed Calories List — Read (List) Page](#consumed-calories-list--read-list-page)
+  - [Update & Delete Calorie](#update--delete-calorie)
+  - [Dashboard — Required vs Consumed Calories](#dashboard--required-vs-consumed-calories)
+  - [Today's Consumed Calories + Total Count](#todays-consumed-calories--total-count)
+  - [Diet Suggestion Logic](#diet-suggestion-logic)
+  - [App URLs — Final Version](#app-urls--final-version)
+  - [Project Structure (Updated)](#project-structure-updated)
+  - [Final Output](#final-output)
+
+## Add `bmr` Field To BasicInfoModel
+
+- A new field `bmr` (Basal Metabolic Rate — the number of calories the body burns at rest) is added to `BasicInfoModel` in [models.py](./CalorieCounter/models.py)
+
+  ```py
+  class BasicInfoModel(models.Model):
+      ...
+      height = models.FloatField(null=True)
+      weight = models.FloatField(null=True)
+      bmr = models.FloatField(null=True)
+  ```
+
+- This field isn't filled in manually by the user — it gets **auto-calculated** later from height/weight/age/gender (see [Update Profile View](#update-profile-view--bmr-calculation-logic))
+- Since the model changed, migrations are needed again
+
+  ```sh
+  py manage.py makemigrations
+  py manage.py migrate
+  ```
+
+---
+[⬆️ Go to Context](#context---part-02)
+
+## Logout Functionality
+
+- Added in [views.py](./CalorieCounter/views.py), protected with `@login_required` so only a logged-in user can log out
+
+  ```py
+  from django.contrib.auth.decorators import login_required
+
+  @login_required
+  def logout_page(request):
+      logout(request)
+      messages.success(request, 'Logout successfully')
+      return redirect('login_page')
+  ```
+
+- Registered in [urls.py](./CalorieCounter/urls.py)
+
+  ```py
+  path('logout/', logout_page, name='logout_page'),
+  ```
+
+> [!NOTE]
+> `@login_required` is also added on `dashboard_page`, `profile_page`, and `update_profile` in this batch of commits — closing the gap mentioned in Part 01 where the dashboard was reachable without logging in.
+
+---
+[⬆️ Go to Context](#context---part-02)
+
+## Conditional Navbar With `is_authenticated`
+
+- The navbar now changes based on login state, using Django's `request.user.is_authenticated` directly inside the template — no extra context needed since the user is already attached to every `request` via middleware
+- Updated in [master/nav.html](./CalorieCounter/templates/master/nav.html)
+
+  ```html
+  {% if request.user.is_authenticated %}
+    <li class="nav-item"><a href="{% url 'dashboard_page' %}">Dashboard</a></li>
+    <li class="nav-item"><a href="{% url 'profile_page' %}">Profile</a></li>
+    <li class="nav-item"><a href="{% url 'consumed_calories_list' %}">Consumed Calories</a></li>
+    <li class="nav-item"><a href="{% url 'logout_page' %}">Logout</a></li>
+  {% else %}
+    <li class="nav-item"><a href="{% url 'login_page' %}">Login</a></li>
+    <li class="nav-item"><a href="{% url 'register_page' %}">Register</a></li>
+  {% endif %}
+  ```
+
+  | State                | Navbar shows                                       |
+  | --------------------- | ----------------------------------------------------- |
+  | Logged in              | Dashboard, Profile, Consumed Calories, Logout          |
+  | Logged out              | Login, Register                                          |
+
+---
+[⬆️ Go to Context](#context---part-02)
+
+## Profile Info Page
+
+- A read-only page showing the logged-in user's name and calculated BMR
+- View, in [views.py](./CalorieCounter/views.py)
+
+  ```py
+  @login_required
+  def profile_page(request):
+      return render(request, 'profile.html')
+  ```
+
+- Template [profile.html](./CalorieCounter/templates/profile.html) — pulls data straight from `request.user.user_info` (the `related_name` set on `BasicInfoModel.user`, see Part 01) without needing to pass anything through `context`
+
+  ```html
+  {% extends 'master/base.html' %}
+  {% block body %}
+  <div class="container">
+      {% include 'master/message.html' %}
+      <h1>Profile Info</h1>
+      <h2>Name: {{request.user.user_info.name}}</h2>
+      <p>BMR: {{request.user.user_info.bmr}}</p>
+      <a href="{% url 'update_profile' %}" class="btn btn-primary">Profile updated</a>
+  </div>
+  {% endblock body %}
+  ```
+
+---
+[⬆️ Go to Context](#context---part-02)
+
+## Update Profile Form
+
+- A `ModelForm` built directly from `BasicInfoModel`, in [forms.py](./CalorieCounter/forms.py)
+
+  ```py
+  class ProfileUpdateForm(forms.ModelForm):
+      class Meta:
+          model = BasicInfoModel
+          fields = '__all__'
+          exclude = ['user', 'bmr']
+  ```
+
+- `fields = '__all__'` + `exclude = ['user', 'bmr']` → includes every model field **except** `user` and `bmr`. Makes sense because:
+  - `user` should never be picked by the person filling the form — it's set automatically from `request.user` in the view
+  - `bmr` is a **calculated** value, not something the user types in directly
+
+---
+[⬆️ Go to Context](#context---part-02)
+
+## Update Profile View — BMR Calculation Logic
+
+- This is the most important piece of business logic added in Part 02: the **Mifflin-St Jeor / Harris-Benedict style BMR formula**, applied right when the profile form is saved
+
+  ```py
+  @login_required
+  def update_profile(request):
+
+      try:
+          current_user = request.user.user_info
+      except:
+          current_user = None
+
+      if request.method == 'POST':
+          form_data = ProfileUpdateForm(request.POST, instance=current_user)
+          if form_data.is_valid():
+              data = form_data.save(commit=False)
+              data.user = request.user
+              weight = data.weight
+              height = data.height
+              age = data.age
+
+              if data.gender == 'Male':
+                  # BMR = 66.47 + (13.75 x weight) + (5.003 x height) - (6.755 x age)
+                  bmr_calculate = 66.47 + (13.75 * weight) + (5.003 * height) - (6.755 * age)
+              else:
+                  # BMR = 655.1 + (9.563 x weight) + (1.850 x height) - (4.676 x age)
+                  bmr_calculate = 655.1 + (9.563 * weight) + (1.850 * height) - (4.676 * age)
+
+              data.bmr = bmr_calculate
+              data.save()
+              messages.success(request, 'Profile Update successfully')
+              return redirect('profile_page')
+
+      form_data = ProfileUpdateForm(instance=current_user)
+      context = {
+          'form_data': form_data,
+          'form_title': "Update Profile Info",
+          'form_btn': "Update"
+      }
+
+      return render(request, 'master/base-form.html', context)
+  ```
+
+- Step-by-step:
+  1. `try/except` looks up the user's existing `BasicInfoModel` via `request.user.user_info` — if they don't have one yet, `current_user` is `None`, and the form will **create** a new record instead of editing one
+  2. `form_data.save(commit=False)` builds the object in memory **without** saving to the database yet — this gives a chance to set `user` and calculate `bmr` first
+  3. Two different formulas run depending on `gender` — this is the classic **Harris-Benedict equation**
+  4. `data.bmr = bmr_calculate` stores the result, then `.save()` commits everything to the database in one go
+  5. Reuses the same `master/base-form.html` template from Part 01 — same trick as Register/Login, just with a different form
+
+---
+[⬆️ Go to Context](#context---part-02)
+
+## Profile Update Template
+
+- No new template file was needed — this view reuses [master/base-form.html](./CalorieCounter/templates/master/base-form.html) from Part 01, passing `form_title = "Update Profile Info"` and `form_btn = "Update"`. Same pattern as Register and Login: **one shared form template, driven entirely by context.**
+
+---
+[⬆️ Go to Context](#context---part-02)
+
+## Consumed Calorie Form
+
+- Also added in [forms.py](./CalorieCounter/forms.py)
+
+  ```py
+  class ConsumedCalorieForm(forms.ModelForm):
+      class Meta:
+          model = ConsumedCalories
+          fields = '__all__'
+          exclude = ['consumed_by']
+  ```
+
+- `consumed_by` is excluded for the same reason `user` was excluded above — it's set automatically from `request.user` in the view, never picked manually by the person filling the form
+
+---
+[⬆️ Go to Context](#context---part-02)
+
+## Add Calorie View
+
+  ```py
+  def add_calorie(request):
+
+      if request.method == "POST":
+          form_data = ConsumedCalorieForm(request.POST)
+          if form_data.is_valid():
+              data = form_data.save(commit=False)
+              data.consumed_by = request.user
+              data.save()
+              messages.success(request, 'successfully')
+              return redirect('consumed_calories_list')
+
+      form_data = ConsumedCalorieForm()
+
+      context = {
+          'form_data': form_data,
+          'form_title': "Add Calorie Info",
+          'form_btn': "Add Calorie",
+      }
+
+      return render(request, 'master/base-form.html', context)
+  ```
+
+- Same `save(commit=False)` pattern as `update_profile` — build the object first, attach `consumed_by = request.user`, then save
+
+---
+[⬆️ Go to Context](#context---part-02)
+
+## Consumed Calories List — Read (List) Page
+
+  ```py
+  def consumed_calories_list(request):
+      consumed_data = ConsumedCalories.objects.filter(consumed_by=request.user)
+
+      context = {
+          "consumed_data": consumed_data,
+      }
+
+      return render(request, 'calorie-list.html', context)
+  ```
+
+- `.filter(consumed_by=request.user)` ensures a user only ever sees **their own** logged food items, never anyone else's
+
+- Template [calorie-list.html](./CalorieCounter/templates/calorie-list.html) loops through and shows Edit/Delete links per row
+
+  ```html
+  {% extends 'master/base.html' %}
+  {% block body %}
+  <div class="container">
+      {% include 'master/message.html' %}
+      <h1>calorie List</h1>
+      <a href="{% url 'add_calorie' %}" class="btn btn-primary">Add Calorie</a>
+
+      <table class="table table-striped">
+        <thead>
+          <tr><th>#SL</th><th>Item Name</th><th>Consumed Calorie</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          {% for data in consumed_data %}
+          <tr>
+              <td>{{forloop.counter}}</td>
+              <td>{{data.item_name}}</td>
+              <td>{{data.calorie}}</td>
+              <td>
+                  <a href="{% url 'Update_calorie' data.id %}">Edit</a>
+                  <a href="{% url 'delate_calorie' data.id %}">Delete</a>
+              </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+  </div>
+  {% endblock body %}
+  ```
+
+---
+[⬆️ Go to Context](#context---part-02)
+
+## Update & Delete Calorie
+
+- **Update** — takes an `id` from the URL, looks up the matching row, and pre-fills the form using `instance=data`
+
+  ```py
+  def Update_calorie(request, id):
+      try:
+          data = ConsumedCalories.objects.get(id=id)
+      except:
+          data = None
+
+      if request.method == "POST":
+          form_data = ConsumedCalorieForm(request.POST, instance=data)
+          if form_data.is_valid():
+              data = form_data.save(commit=False)
+              data.consumed_by = request.user
+              data.save()
+              messages.success(request, 'successfully')
+              return redirect('consumed_calories_list')
+
+      form_data = ConsumedCalorieForm(instance=data)
+      context = {
+          'form_data': form_data,
+          'form_title': "Update Calorie Info",
+          'form_btn': "Update Calorie",
+      }
+
+      return render(request, 'master/base-form.html', context)
+  ```
+
+- **Delete** — straightforward, no confirmation step; deletes immediately on visiting the link
+
+  ```py
+  def delate_calorie(request, id):
+      try:
+          data = ConsumedCalories.objects.get(id=id)
+      except:
+          data = None
+
+      data.delete()
+      messages.success(request, 'successfully')
+      return redirect('consumed_calories_list')
+  ```
+
+> [!IMPORTANT]
+> `delate_calorie` deletes on a plain `GET` request (clicking a link), with no "are you sure?" confirmation. This works for a class project, but in a real app, delete actions should require `POST` (e.g. from a button + form) to avoid accidental deletion — for example from a bot or browser prefetch following the link.
+
+- Both are wired up with a dynamic `id` in the URL, in [urls.py](./CalorieCounter/urls.py)
+
+  ```py
+  path('update-calorie/<int:id>/', Update_calorie, name='Update_calorie'),
+  path('delete-calorie/<int:id>/', delate_calorie, name='delate_calorie'),
+  ```
+
+---
+[⬆️ Go to Context](#context---part-02)
+
+## Dashboard — Required vs Consumed Calories
+
+- The dashboard view was rewritten to show a real summary: how many calories the user is **required** to eat (BMR) vs how many they've **consumed today**
+
+  ```py
+  from datetime import date
+  from django.db.models import Sum, Count
+
+  @login_required
+  def dashboard_page(request):
+
+      try:
+          current_user = request.user
+          bmr = round(request.user.user_info.bmr, 2)
+      except:
+          bmr = 0
+
+      today = date.today()
+      today_consumed_date = ConsumedCalories.objects.filter(
+          consumed_by=current_user,
+          created_at=today
+      )
+      ...
+  ```
+
+- `date.today()` gets today's date, then `.filter(created_at=today)` narrows the query down to **only today's** logged food items — this is why `ConsumedCalories.created_at` used `auto_now_add=True` back in Part 01
+
+---
+[⬆️ Go to Context](#context---part-02)
+
+## Today's Consumed Calories + Total Count
+
+- `.aggregate()` runs a **single database query** to compute both the sum and count of today's calorie entries at once — more efficient than looping through in Python
+
+  ```py
+  total_consumed_calories = today_consumed_date.aggregate(
+      total=Sum('calorie'),
+      total_count=Count('calorie')
+  )
+
+  total_caloire = total_consumed_calories['total']
+  less_more = bmr - total_caloire
+  ```
+
+  | Aggregate result key | Meaning                                    |
+  | ---------------------- | --------------------------------------------- |
+  | `total`                  | Sum of all `calorie` values logged today       |
+  | `total_count`             | How many items were logged today               |
+
+- `less_more = bmr - total_caloire` → positive number means the user is **under** their requirement, negative means they've **exceeded** it — shown directly in the dashboard cards
+
+---
+[⬆️ Go to Context](#context---part-02)
+
+## Diet Suggestion Logic
+
+- A simple rule-based suggestion message, based on comparing `bmr` (required) against `total_caloire` (consumed)
+
+  ```py
+  if bmr > total_caloire:
+      suggestion = "Your calorie intake is below your daily requirement."
+  else:
+      suggestion = "Your calorie intake has exceeded your daily requirement."
+  ```
+
+- All of this — `required_calories`, `today_consumed_date`, `consumed_calories`, `total_count`, `less_more`, `suggestion` — is passed into the dashboard's `context` and rendered in [dashboard.html](./CalorieCounter/templates/dashboard.html) as 3 summary cards + a suggestion line + today's food log table with Edit/Delete actions.
+
+---
+[⬆️ Go to Context](#context---part-02)
+
+## App URLs — Final Version
+
+- Full [urls.py](./CalorieCounter/urls.py) after Part 02:
+
+  ```py
+  urlpatterns = [
+      path('', register_page, name='register_page'),
+      path('login/', login_page, name='login_page'),
+      path('logout/', logout_page, name='logout_page'),
+      path('dashboard/', dashboard_page, name='dashboard_page'),
+      path('profile/', profile_page, name='profile_page'),
+      path('update-profile/', update_profile, name='update_profile'),
+      path('consumed-calorie-list/', consumed_calories_list, name='consumed_calories_list'),
+      path('add-calorie/', add_calorie, name='add_calorie'),
+      path('update-calorie/<int:id>/', Update_calorie, name='Update_calorie'),
+      path('delete-calorie/<int:id>/', delate_calorie, name='delate_calorie'),
+  ]
+  ```
+
+---
+[⬆️ Go to Context](#context---part-02)
+
+## Project Structure (Updated)
+
+```txt
+CalorieCounter/
+├── models.py                # + bmr field on BasicInfoModel
+├── admin.py
+├── forms.py                   # + ProfileUpdateForm, ConsumedCalorieForm
+├── views.py                    # + logout, profile, update_profile,
+│                                #   add/update/delete calorie, dashboard logic
+├── urls.py                      # + logout, profile, calorie routes
+├── migrations/
+└── templates/
+    ├── master/
+    │   ├── base.html
+    │   ├── base-form.html        # reused for update-profile & add/update-calorie too
+    │   ├── nav.html                # + is_authenticated conditional
+    │   └── message.html
+    ├── dashboard.html               # + summary cards + today's log table
+    ├── profile.html                  # NEW
+    └── calorie-list.html              # NEW
+```
+
+---
+[⬆️ Go to Context](#context---part-02)
+
+## Final Output
+
+- `http://127.0.0.1:8000/dashboard/` → Required vs Consumed calories summary, suggestion, today's food log
+- `http://127.0.0.1:8000/profile/` → View name + BMR
+- `http://127.0.0.1:8000/update-profile/` → Fill/update height, weight, age, gender → BMR auto-calculated
+- `http://127.0.0.1:8000/consumed-calorie-list/` → Full history of logged food items
+- `http://127.0.0.1:8000/add-calorie/` → Log a new food item
+- `http://127.0.0.1:8000/update-calorie/<id>/` → Edit a logged item
+- `http://127.0.0.1:8000/delete-calorie/<id>/` → Delete a logged item
+- `http://127.0.0.1:8000/logout/` → Ends session, redirects to login
+
+**Full flow (Part 01 + Part 02):** Register → Login → Update Profile (BMR calculated) → Add Calorie entries → Dashboard shows required vs consumed calories + suggestion → Logout
+
+---
+[⬆️ Go to Context](#context---part-02)
