@@ -1,4 +1,6 @@
 from django.shortcuts import render, redirect
+from datetime import date
+from django.db.models import Sum
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -58,12 +60,21 @@ def logout_page(request):
 def dashboard_page(request):
     
     try:
+        current_user = request.user
         bmr = round(request.user.user_info.bmr, 2)
     except:
         bmr = 0
+    today = date.today()
+    total_consumed_date = ConsumedCalories.objects.filter(
+        consumed_by = current_user,
+        created_at = today
+    ).aggregate(total = Sum('calorie'))
+    
+    
     
     context ={
         'required_calories': bmr,
+        'consumed_calories': total_consumed_date['total']
         
     }
     

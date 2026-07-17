@@ -1,13 +1,13 @@
 {% extends 'master/base.html' %} {% block body %}
 <div class="container">
   {% include 'master/message.html' %}
-  <h1>Welcome, {{ request.user.username}}</h1>
+  <h1>Daily, Consumed Calories</h1>
   <div class="row">
     <div class="col-lg-4 col-md-6 col-sm-12">
       <div class="card">
         <div class="card-header">Consumed Calories</div>
         <div class="card-body">
-          <h5 class="card-title">0 Kcal</h5>
+          <h5 class="card-title">{{consumed_calories}} Kcal</h5>
         </div>
       </div>
     </div>
