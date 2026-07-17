@@ -68,4 +68,11 @@ def profile_page(request):
 @login_required
 def update_profile(request):
     
-    return render(request, 'master/base-form.html')
+    form_data = ProfileUpdateForm()
+    context = {
+        'form_data': form_data,
+        'form_title': "Update Profile Info",
+        'form_btn': "Update"
+    }
+    
+    return render(request, 'master/base-form.html', context)

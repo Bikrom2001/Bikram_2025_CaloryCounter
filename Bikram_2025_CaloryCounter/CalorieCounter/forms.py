@@ -12,3 +12,10 @@ class RegisterationForm(UserCreationForm):
 
 class LoginForm(AuthenticationForm):
     pass
+
+
+class ProfileUpdateForm(forms.ModelForm):
+    class Meta:
+        model = BasicInfoModel
+        fields = '__all__'
+        exclude = ['user', 'bmr']
